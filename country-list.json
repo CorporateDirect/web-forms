@@ -1,4 +1,4 @@
-const countryData = [
+[
   { name: "Afghanistan", code: "+93", flag: "🇦🇫" },
   { name: "Albania", code: "+355", flag: "🇦🇱" },
   { name: "Algeria", code: "+213", flag: "🇩🇿" },
@@ -153,4 +153,4 @@ const countryData = [
   { name: "Yemen", code: "+967", flag: "🇾🇪" },
   { name: "Zambia", code: "+260", flag: "🇿🇲" },
   { name: "Zimbabwe", code: "+263", flag: "🇿🇼" }
-];
+]
