@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initialize country dropdowns
-  const countrySelects = document.querySelectorAll('select[data-country-code]');
+  const countrySelects = document.querySelectorAll('.form_input select[data-country-code]');
   log('CountryLoader', `Found ${countrySelects.length} country select elements`);
   
   if (countrySelects.length) {
@@ -296,21 +296,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         });
         log('CountryLoader', `Added ${addedCount} countries to select`);
-
-        // Initialize Tom Select if available
-        if (window.TomSelect) {
-          log('CountryLoader', 'Initializing TomSelect');
-          try {
-            new TomSelect(select, {
-              sortField: { field: "text", direction: "asc" }
-            });
-            log('CountryLoader', 'TomSelect initialized successfully');
-          } catch (err) {
-            error('CountryLoader', 'Failed to initialize TomSelect:', err);
-          }
-        } else {
-          log('CountryLoader', 'TomSelect not available, using native select');
-        }
 
         // Trigger change event to ensure Webflow form updates
         select.dispatchEvent(new Event('change', { bubbles: true }));
