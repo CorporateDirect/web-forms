@@ -256,14 +256,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   if (countrySelects.length) {
     try {
-      const preloadLink = document.querySelector('link[href*="country-list.json"]');
-      log('CountryLoader', 'Preload link:', preloadLink?.href);
+      // Look for the preloaded country list in the window object
+      const countries = window.COUNTRIES || window.countries;
+      log('CountryLoader', 'Looking for preloaded country list...');
       
-      if (!preloadLink) throw new Error('Country list preload link not found');
-
-      log('CountryLoader', 'Fetching countries...');
-      const countries = await CountryListManager.fetchCountries(preloadLink);
-      log('CountryLoader', `Loaded ${countries.length} countries`);
+      if (!countries || !Array.isArray(countries)) {
+        throw new Error('Preloaded country list not found or invalid format');
+      }
+      
+      log('CountryLoader', `Found preloaded country list with ${countries.length} countries`);
+      
+      // Sort countries with US first
+      const usIdx = countries.findIndex(c => 
+        (c.code || '').toUpperCase() === 'US' || /United States/.test(c.name)
+      );
+      if (usIdx > -1) {
+        const usCountry = countries.splice(usIdx, 1)[0];
+        countries.unshift(usCountry);
+      }
+      
+      // Sort remaining countries
+      countries.sort((a, b) => a.name.localeCompare(b.name));
       
       countrySelects.forEach((select, index) => {
         log('CountryLoader', `Populating select ${index + 1}/${countrySelects.length}:`, select.id || select.name);
