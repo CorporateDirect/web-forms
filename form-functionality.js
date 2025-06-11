@@ -7,7 +7,6 @@ const error = (prefix, ...args) => console.error(`[${prefix}]`, ...args);
 // Dependency Management
 class DependencyManager {
   static required = {
-    'TomSelect': typeof window.TomSelect !== 'undefined',
     'libphonenumber': typeof window.libphonenumber !== 'undefined'
   };
 
@@ -36,15 +35,6 @@ class DependencyManager {
       script.src = 'https://cdn.jsdelivr.net/npm/libphonenumber-js@1.10.55/bundle/libphonenumber-js.min.js';
       script.async = true;
       script.onerror = () => error('Dependencies', 'Failed to load libphonenumber');
-      document.head.appendChild(script);
-    }
-
-    if (missing.includes('TomSelect')) {
-      log('Dependencies', 'Loading TomSelect...');
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js';
-      script.async = true;
-      script.onerror = () => error('Dependencies', 'Failed to load TomSelect');
       document.head.appendChild(script);
     }
   }
