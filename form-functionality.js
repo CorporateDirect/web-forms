@@ -31,9 +31,18 @@ class DependencyManager {
     if (missing.includes('libphonenumber')) {
       log('Dependencies', 'Loading libphonenumber...');
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.48/bundle/libphonenumber-js.min.js';
+      script.src = 'https://cdn.jsdelivr.net/npm/libphonenumber-js@1.10.55/bundle/libphonenumber-js.min.js';
       script.async = true;
       script.onerror = () => error('Dependencies', 'Failed to load libphonenumber');
+      document.head.appendChild(script);
+    }
+
+    if (missing.includes('TomSelect')) {
+      log('Dependencies', 'Loading TomSelect...');
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js';
+      script.async = true;
+      script.onerror = () => error('Dependencies', 'Failed to load TomSelect');
       document.head.appendChild(script);
     }
   }
@@ -176,8 +185,16 @@ class FormFieldManager {
 // Phone Number Management
 class PhoneNumberManager {
   static initializePhoneFields() {
+    if (!window.libphonenumber) {
+      log('PhoneHandler', 'libphonenumber not available, skipping phone field initialization');
+      return;
+    }
+
     const { AsYouType, parsePhoneNumberFromString } = window.libphonenumber;
-    if (!AsYouType || !parsePhoneNumberFromString) return;
+    if (!AsYouType || !parsePhoneNumberFromString) {
+      log('PhoneHandler', 'Required libphonenumber functions not available');
+      return;
+    }
 
     document.querySelectorAll('input[data-validate="phone"][data-phone-country-ref]')
       .forEach(field => this.setupPhoneField(field, AsYouType, parsePhoneNumberFromString));
