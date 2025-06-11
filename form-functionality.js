@@ -243,141 +243,172 @@ document.addEventListener('DOMContentLoaded', async () => {
     error('FormScript', 'Required dependencies not loaded. Form functionality may be limited.');
   }
 
-  // Initialize country dropdowns
-  log('CountryLoader', 'Starting country dropdown initialization...');
-  
-  // Debug: Let's see what select elements exist on the page
-  const allSelects = document.querySelectorAll('select');
-  log('CountryLoader', `Found ${allSelects.length} total select elements on page`);
-  
-  allSelects.forEach((select, index) => {
-    log('CountryLoader', `Select ${index + 1}:`, {
-      element: select,
-      id: select.id,
-      name: select.name,
-      classes: select.className,
-      attributes: Array.from(select.attributes).map(attr => `${attr.name}="${attr.value}"`),
-      hasDataCountryCode: select.hasAttribute('data-country-code'),
-      parentClasses: select.parentElement?.className
-    });
-  });
-  
-  // Try different selectors to find the country dropdown
-  const selectors = [
-    '.form_input select[data-country-code]',
-    'select[data-country-code]',
-    '.form_input select',
-    'select'
-  ];
-  
-  let countrySelects = null;
-  let usedSelector = null;
-  
-  for (const selector of selectors) {
-    const elements = document.querySelectorAll(selector);
-    log('CountryLoader', `Selector "${selector}" found ${elements.length} elements`);
+  // Function to initialize country dropdowns
+  const initializeCountryDropdowns = () => {
+    log('CountryLoader', 'Starting country dropdown initialization...');
     
-    if (selector === 'select[data-country-code]' && elements.length > 0) {
-      countrySelects = elements;
-      usedSelector = selector;
-      break;
-    } else if (selector === '.form_input select' && elements.length > 0) {
-      // Check if any of these selects should be the country dropdown
-      const potentialCountrySelects = Array.from(elements).filter(select => 
+    // Debug: Let's see what select elements exist on the page
+    const allSelects = document.querySelectorAll('select');
+    log('CountryLoader', `Found ${allSelects.length} total select elements on page`);
+    
+    allSelects.forEach((select, index) => {
+      log('CountryLoader', `Select ${index + 1}:`, {
+        element: select,
+        id: select.id,
+        name: select.name,
+        classes: select.className,
+        attributes: Array.from(select.attributes).map(attr => `${attr.name}="${attr.value}"`),
+        hasDataCountryCode: select.hasAttribute('data-country-code'),
+        parentClasses: select.parentElement?.className
+      });
+    });
+    
+    // Try different selectors to find the country dropdown
+    const selectors = [
+      'select[data-country-code]',
+      '.form_input select[data-country-code]',
+      '.form_input select',
+      'select'
+    ];
+    
+    let countrySelects = null;
+    let usedSelector = null;
+    
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      log('CountryLoader', `Selector "${selector}" found ${elements.length} elements`);
+      
+      if (selector === 'select[data-country-code]' && elements.length > 0) {
+        countrySelects = elements;
+        usedSelector = selector;
+        break;
+      } else if (selector === '.form_input select[data-country-code]' && elements.length > 0) {
+        countrySelects = elements;
+        usedSelector = selector;
+        break;
+      } else if (selector === '.form_input select' && elements.length > 0) {
+        // Check if any of these selects should be the country dropdown
+        const potentialCountrySelects = Array.from(elements).filter(select => 
+          select.hasAttribute('data-country-code') || 
+          select.id.toLowerCase().includes('country') ||
+          select.name.toLowerCase().includes('country')
+        );
+        if (potentialCountrySelects.length > 0) {
+          countrySelects = potentialCountrySelects;
+          usedSelector = selector + ' (filtered for country)';
+          break;
+        }
+      }
+    }
+    
+    if (!countrySelects) {
+      // Fallback: look for any select that might be a country dropdown
+      countrySelects = document.querySelectorAll('select');
+      const potentialCountrySelects = Array.from(countrySelects).filter(select => 
         select.hasAttribute('data-country-code') || 
         select.id.toLowerCase().includes('country') ||
-        select.name.toLowerCase().includes('country')
+        select.name.toLowerCase().includes('country') ||
+        select.className.toLowerCase().includes('country')
       );
+      
       if (potentialCountrySelects.length > 0) {
         countrySelects = potentialCountrySelects;
-        usedSelector = selector + ' (filtered for country)';
-        break;
+        usedSelector = 'fallback country detection';
+      } else {
+        countrySelects = [];
       }
     }
-  }
-  
-  if (!countrySelects) {
-    // Fallback: look for any select that might be a country dropdown
-    countrySelects = document.querySelectorAll('select');
-    const potentialCountrySelects = Array.from(countrySelects).filter(select => 
-      select.hasAttribute('data-country-code') || 
-      select.id.toLowerCase().includes('country') ||
-      select.name.toLowerCase().includes('country') ||
-      select.className.toLowerCase().includes('country')
-    );
     
-    if (potentialCountrySelects.length > 0) {
-      countrySelects = potentialCountrySelects;
-      usedSelector = 'fallback country detection';
-    } else {
-      countrySelects = [];
-    }
-  }
-  
-  log('CountryLoader', `Using selector: ${usedSelector}`);
-  log('CountryLoader', `Found ${countrySelects.length} country select elements`);
-  
-  if (countrySelects.length) {
-    try {
-      // Look for the preloaded country list in the window object
-      log('CountryLoader', 'Checking window.countryList:', window.countryList);
-      const countries = window.countryList;
-      
-      if (!countries) {
-        log('CountryLoader', 'window.countryList is undefined');
-        throw new Error('Preloaded country list not found');
-      }
-      
-      if (!Array.isArray(countries)) {
-        log('CountryLoader', 'window.countryList is not an array:', typeof countries);
-        throw new Error('Invalid country list format');
-      }
-      
-      log('CountryLoader', `Found preloaded country list with ${countries.length} countries`);
-      log('CountryLoader', 'First few countries:', countries.slice(0, 3));
-      
-      // Sort countries with US first
-      const usIdx = countries.findIndex(c => 
-        (c.code || '').toUpperCase() === 'US' || /United States/.test(c.name)
-      );
-      if (usIdx > -1) {
-        const usCountry = countries.splice(usIdx, 1)[0];
-        countries.unshift(usCountry);
-        log('CountryLoader', 'Moved US to top of list');
-      }
-      
-      // Sort remaining countries
-      countries.sort((a, b) => a.name.localeCompare(b.name));
-      
-      countrySelects.forEach((select, index) => {
-        log('CountryLoader', `Populating select ${index + 1}/${countrySelects.length}:`, select.id || select.name);
-        log('CountryLoader', 'Select element:', select);
+    log('CountryLoader', `Using selector: ${usedSelector}`);
+    log('CountryLoader', `Found ${countrySelects.length} country select elements`);
+    
+    if (countrySelects.length) {
+      try {
+        // Look for the preloaded country list in the window object
+        log('CountryLoader', 'Checking window.countryList:', window.countryList);
+        const countries = window.countryList;
         
-        // Clear existing options
-        select.innerHTML = '<option value="">Select a country…</option>';
+        if (!countries) {
+          log('CountryLoader', 'window.countryList is undefined');
+          throw new Error('Preloaded country list not found');
+        }
         
-        // Add countries
-        let addedCount = 0;
-        countries.forEach(country => {
-          const opt = CountryListManager.createOption(country);
-          if (opt) {
-            select.appendChild(opt);
-            addedCount++;
-          }
-        });
-        log('CountryLoader', `Added ${addedCount} countries to select`);
-        log('CountryLoader', 'Select options after population:', select.options.length);
+        if (!Array.isArray(countries)) {
+          log('CountryLoader', 'window.countryList is not an array:', typeof countries);
+          throw new Error('Invalid country list format');
+        }
+        
+        log('CountryLoader', `Found preloaded country list with ${countries.length} countries`);
+        log('CountryLoader', 'First few countries:', countries.slice(0, 3));
+        
+        // Sort countries with US first
+        const usIdx = countries.findIndex(c => 
+          (c.code || '').toUpperCase() === 'US' || /United States/.test(c.name)
+        );
+        if (usIdx > -1) {
+          const usCountry = countries.splice(usIdx, 1)[0];
+          countries.unshift(usCountry);
+          log('CountryLoader', 'Moved US to top of list');
+        }
+        
+        // Sort remaining countries
+        countries.sort((a, b) => a.name.localeCompare(b.name));
+        
+        countrySelects.forEach((select, index) => {
+          log('CountryLoader', `Populating select ${index + 1}/${countrySelects.length}:`, select.id || select.name);
+          log('CountryLoader', 'Select element:', select);
+          
+          // Clear existing options
+          select.innerHTML = '<option value="">Select a country…</option>';
+          
+          // Add countries
+          let addedCount = 0;
+          countries.forEach(country => {
+            const opt = CountryListManager.createOption(country);
+            if (opt) {
+              select.appendChild(opt);
+              addedCount++;
+            }
+          });
+          log('CountryLoader', `Added ${addedCount} countries to select`);
+          log('CountryLoader', 'Select options after population:', select.options.length);
 
-        // Trigger change event to ensure Webflow form updates
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-        log('CountryLoader', 'Change event dispatched');
-      });
-    } catch (err) {
-      error('CountryLoader', 'Failed to load country list:', err);
-      error('CountryLoader', 'Error details:', err.message);
+          // Trigger change event to ensure Webflow form updates
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          log('CountryLoader', 'Change event dispatched');
+        });
+        
+        return true; // Success
+      } catch (err) {
+        error('CountryLoader', 'Failed to load country list:', err);
+        error('CountryLoader', 'Error details:', err.message);
+        return false;
+      }
+    } else {
+      log('CountryLoader', 'No select elements found with data-country-code attribute');
+      return false;
     }
-  } else {
-    log('CountryLoader', 'No select elements found with data-country-code attribute');
+  };
+
+  // Try to initialize immediately
+  let success = initializeCountryDropdowns();
+  
+  // If it failed, try again after Webflow has had time to initialize
+  if (!success) {
+    log('CountryLoader', 'Initial attempt failed, waiting for Webflow to initialize...');
+    
+    setTimeout(() => {
+      log('CountryLoader', 'Retrying country dropdown initialization after delay...');
+      success = initializeCountryDropdowns();
+      
+      if (!success) {
+        log('CountryLoader', 'Second attempt failed, trying once more...');
+        setTimeout(() => {
+          log('CountryLoader', 'Final retry attempt...');
+          initializeCountryDropdowns();
+        }, 2000);
+      }
+    }, 1000);
   }
 
   // Initialize form fields
