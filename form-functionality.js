@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (countrySelects.length) {
     try {
       // Look for the preloaded country list in the window object
-      const countries = window.COUNTRIES || window.countries;
+      const countries = window.countryList;
       log('CountryLoader', 'Looking for preloaded country list...');
       
       if (!countries || !Array.isArray(countries)) {
