@@ -33,16 +33,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1) COUNTRY DROPDOWN POPULATOR
   // ————————————————————————————————
   const countrySelects = document.querySelectorAll('select[data-country-code]');
+  console.log('[DEBUG] Found country selects:', countrySelects.length);
   
   if (countrySelects.length) {
     try {
       // Use the preloaded country list
       const preloadLink = document.querySelector('link[href*="country-list.json"]');
+      console.log('[DEBUG] Preload link found:', !!preloadLink, preloadLink?.href);
+      
       if (!preloadLink) {
         throw new Error('Country list preload link not found');
       }
 
       // Get the country list from the preload
+      console.log('[DEBUG] Attempting to fetch country list...');
       const res = await fetch(preloadLink.href, {
         method: 'GET',
         headers: {
@@ -51,9 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         credentials: 'same-origin'
       });
       
+      console.log('[DEBUG] Fetch response status:', res.status);
       if (!res.ok) throw new Error(`Failed to fetch country list: ${res.status}`);
       
       const countries = await res.json();
+      console.log('[DEBUG] Countries loaded:', countries?.length);
       if (!Array.isArray(countries)) throw new Error('Invalid country list format');
       
       // Sort countries with US first
@@ -69,7 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       countries.sort((a, b) => a.name.localeCompare(b.name));
       
       // Populate selects
-      countrySelects.forEach(select => {
+      console.log('[DEBUG] Starting to populate select elements...');
+      countrySelects.forEach((select, index) => {
+        console.log(`[DEBUG] Populating select ${index + 1}/${countrySelects.length}`);
+        
         // Clear existing options
         select.innerHTML = '<option value="">Select a country…</option>';
         
@@ -86,6 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Initialize Tom Select if available
         if (window.TomSelect) {
+          console.log('[DEBUG] Initializing TomSelect');
           new TomSelect(select, {
             sortField: {
               field: "text",
@@ -93,9 +103,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           });
         }
+
+        // Trigger change event to ensure Webflow form updates
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log('[DEBUG] Change event dispatched');
       });
+
+      console.log('[DEBUG] Country population complete');
     } catch (err) {
-      error('CountryLoader', err);
+      console.error('[DEBUG] Error in country population:', err);
       // Fallback to basic country list
       countrySelects.forEach(select => {
         select.innerHTML = `
