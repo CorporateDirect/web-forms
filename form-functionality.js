@@ -252,31 +252,60 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize country dropdowns
   const countrySelects = document.querySelectorAll('select[data-country-code]');
+  log('CountryLoader', `Found ${countrySelects.length} country select elements`);
+  
   if (countrySelects.length) {
     try {
       const preloadLink = document.querySelector('link[href*="country-list.json"]');
+      log('CountryLoader', 'Preload link:', preloadLink?.href);
+      
       if (!preloadLink) throw new Error('Country list preload link not found');
 
+      log('CountryLoader', 'Fetching countries...');
       const countries = await CountryListManager.fetchCountries(preloadLink);
+      log('CountryLoader', `Loaded ${countries.length} countries`);
       
-      countrySelects.forEach(select => {
+      countrySelects.forEach((select, index) => {
+        log('CountryLoader', `Populating select ${index + 1}/${countrySelects.length}:`, select.id || select.name);
+        
+        // Clear existing options
         select.innerHTML = '<option value="">Select a country…</option>';
+        
+        // Add countries
+        let addedCount = 0;
         countries.forEach(country => {
           const opt = CountryListManager.createOption(country);
-          if (opt) select.appendChild(opt);
+          if (opt) {
+            select.appendChild(opt);
+            addedCount++;
+          }
         });
+        log('CountryLoader', `Added ${addedCount} countries to select`);
 
+        // Initialize Tom Select if available
         if (window.TomSelect) {
-          new TomSelect(select, {
-            sortField: { field: "text", direction: "asc" }
-          });
+          log('CountryLoader', 'Initializing TomSelect');
+          try {
+            new TomSelect(select, {
+              sortField: { field: "text", direction: "asc" }
+            });
+            log('CountryLoader', 'TomSelect initialized successfully');
+          } catch (err) {
+            error('CountryLoader', 'Failed to initialize TomSelect:', err);
+          }
+        } else {
+          log('CountryLoader', 'TomSelect not available, using native select');
         }
 
+        // Trigger change event to ensure Webflow form updates
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        log('CountryLoader', 'Change event dispatched');
       });
     } catch (err) {
       error('CountryLoader', 'Failed to load country list:', err);
     }
+  } else {
+    log('CountryLoader', 'No select elements found with data-country-code attribute');
   }
 
   // Initialize form fields
