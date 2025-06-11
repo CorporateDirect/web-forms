@@ -4,11 +4,14 @@ const error = (prefix, ...args) => console.error(`[${prefix}]`, ...args);
 
 // Check if required scripts are loaded
 function checkDependencies() {
+  console.log('[DEBUG] Checking dependencies...');
+  
   const required = {
-    'MultiStep': typeof window.MultiStep !== 'undefined',
     'TomSelect': typeof window.TomSelect !== 'undefined',
     'libphonenumber': typeof window.libphonenumber !== 'undefined'
   };
+  
+  console.log('[DEBUG] Dependency status:', required);
   
   const missing = Object.entries(required)
     .filter(([, loaded]) => !loaded)
@@ -16,6 +19,18 @@ function checkDependencies() {
     
   if (missing.length) {
     error('Dependencies', `Missing required scripts: ${missing.join(', ')}`);
+    console.log('[DEBUG] Attempting to load missing dependencies...');
+    
+    // Try to load missing dependencies
+    if (missing.includes('libphonenumber')) {
+      console.log('[DEBUG] Loading libphonenumber...');
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.48/bundle/libphonenumber-js.min.js';
+      script.async = true;
+      script.onerror = () => error('Dependencies', 'Failed to load libphonenumber');
+      document.head.appendChild(script);
+    }
+    
     return false;
   }
   return true;
@@ -26,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   if (!checkDependencies()) {
     error('FormScript', 'Required dependencies not loaded. Form functionality may be limited.');
-    return;
+    // Continue with limited functionality
   }
 
   // ————————————————————————————————
