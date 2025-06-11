@@ -250,14 +250,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (countrySelects.length) {
     try {
       // Look for the preloaded country list in the window object
+      log('CountryLoader', 'Checking window.countryList:', window.countryList);
       const countries = window.countryList;
-      log('CountryLoader', 'Looking for preloaded country list...');
       
-      if (!countries || !Array.isArray(countries)) {
-        throw new Error('Preloaded country list not found or invalid format');
+      if (!countries) {
+        log('CountryLoader', 'window.countryList is undefined');
+        throw new Error('Preloaded country list not found');
+      }
+      
+      if (!Array.isArray(countries)) {
+        log('CountryLoader', 'window.countryList is not an array:', typeof countries);
+        throw new Error('Invalid country list format');
       }
       
       log('CountryLoader', `Found preloaded country list with ${countries.length} countries`);
+      log('CountryLoader', 'First few countries:', countries.slice(0, 3));
       
       // Sort countries with US first
       const usIdx = countries.findIndex(c => 
@@ -266,6 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (usIdx > -1) {
         const usCountry = countries.splice(usIdx, 1)[0];
         countries.unshift(usCountry);
+        log('CountryLoader', 'Moved US to top of list');
       }
       
       // Sort remaining countries
@@ -273,6 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       countrySelects.forEach((select, index) => {
         log('CountryLoader', `Populating select ${index + 1}/${countrySelects.length}:`, select.id || select.name);
+        log('CountryLoader', 'Select element:', select);
         
         // Clear existing options
         select.innerHTML = '<option value="">Select a country…</option>';
@@ -287,6 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         });
         log('CountryLoader', `Added ${addedCount} countries to select`);
+        log('CountryLoader', 'Select options after population:', select.options.length);
 
         // Trigger change event to ensure Webflow form updates
         select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -294,6 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     } catch (err) {
       error('CountryLoader', 'Failed to load country list:', err);
+      error('CountryLoader', 'Error details:', err.message);
     }
   } else {
     log('CountryLoader', 'No select elements found with data-country-code attribute');
