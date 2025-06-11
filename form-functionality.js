@@ -244,7 +244,77 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initialize country dropdowns
-  const countrySelects = document.querySelectorAll('.form_input select[data-country-code]');
+  log('CountryLoader', 'Starting country dropdown initialization...');
+  
+  // Debug: Let's see what select elements exist on the page
+  const allSelects = document.querySelectorAll('select');
+  log('CountryLoader', `Found ${allSelects.length} total select elements on page`);
+  
+  allSelects.forEach((select, index) => {
+    log('CountryLoader', `Select ${index + 1}:`, {
+      element: select,
+      id: select.id,
+      name: select.name,
+      classes: select.className,
+      attributes: Array.from(select.attributes).map(attr => `${attr.name}="${attr.value}"`),
+      hasDataCountryCode: select.hasAttribute('data-country-code'),
+      parentClasses: select.parentElement?.className
+    });
+  });
+  
+  // Try different selectors to find the country dropdown
+  const selectors = [
+    '.form_input select[data-country-code]',
+    'select[data-country-code]',
+    '.form_input select',
+    'select'
+  ];
+  
+  let countrySelects = null;
+  let usedSelector = null;
+  
+  for (const selector of selectors) {
+    const elements = document.querySelectorAll(selector);
+    log('CountryLoader', `Selector "${selector}" found ${elements.length} elements`);
+    
+    if (selector === 'select[data-country-code]' && elements.length > 0) {
+      countrySelects = elements;
+      usedSelector = selector;
+      break;
+    } else if (selector === '.form_input select' && elements.length > 0) {
+      // Check if any of these selects should be the country dropdown
+      const potentialCountrySelects = Array.from(elements).filter(select => 
+        select.hasAttribute('data-country-code') || 
+        select.id.toLowerCase().includes('country') ||
+        select.name.toLowerCase().includes('country')
+      );
+      if (potentialCountrySelects.length > 0) {
+        countrySelects = potentialCountrySelects;
+        usedSelector = selector + ' (filtered for country)';
+        break;
+      }
+    }
+  }
+  
+  if (!countrySelects) {
+    // Fallback: look for any select that might be a country dropdown
+    countrySelects = document.querySelectorAll('select');
+    const potentialCountrySelects = Array.from(countrySelects).filter(select => 
+      select.hasAttribute('data-country-code') || 
+      select.id.toLowerCase().includes('country') ||
+      select.name.toLowerCase().includes('country') ||
+      select.className.toLowerCase().includes('country')
+    );
+    
+    if (potentialCountrySelects.length > 0) {
+      countrySelects = potentialCountrySelects;
+      usedSelector = 'fallback country detection';
+    } else {
+      countrySelects = [];
+    }
+  }
+  
+  log('CountryLoader', `Using selector: ${usedSelector}`);
   log('CountryLoader', `Found ${countrySelects.length} country select elements`);
   
   if (countrySelects.length) {
